@@ -9,6 +9,6 @@ class CernaTaskFactory extends AbstractTaskFactory {
     }
 
     public TaskIterator createTaskIterator() {
-        return null;
+        return new TaskIterator(new ExpressionInputTask());
     }
 }
