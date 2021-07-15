@@ -14,7 +14,7 @@ public class CernaActivator extends AbstractCyActivator {
 
         Properties props = new Properties();
         props.setProperty("preferredMenu", "Apps.cerna");
-        props.setProperty("title", "Generate ceRNA Network");
+        props.setProperty("title", "Generate a ceRNA Network");
 
         registerService(context, myFactory, TaskFactory.class, props);
     }
