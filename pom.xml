@@ -126,8 +126,6 @@
         </repository>
     </repositories>
     <dependencies>
-
-        <!-- Cytoscape stuff -->
         <dependency>
             <groupId>org.cytoscape</groupId>
             <artifactId>swing-application-api</artifactId>
@@ -152,56 +150,11 @@
             <version>${cytoscape.api.version}</version>
             <scope>provided</scope>
         </dependency>
-
-        <!-- standard stuff -->
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>org.osgi.core</artifactId>
             <version>${osgi.api.version}</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.8.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>1.8.5</version>
-            <scope>test</scope>
-        </dependency><dependency>
-        <groupId>org.ops4j.pax.logging</groupId>
-        <artifactId>pax-logging-api</artifactId>
-        <version>1.5.3</version>
-        <scope>provided</scope>
-    </dependency>
-        <dependency>
-            <groupId>com.googlecode.json-simple</groupId>
-            <artifactId>json-simple</artifactId>
-            <version>1.1.1</version>
-            <optional>true</optional>
-        </dependency>
-
-        <!-- custom stuff -->
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5.9</version>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpmime</artifactId>
-            <version>4.5.9</version>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-compress -->
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-compress</artifactId>
-            <version>1.19</version>
         </dependency>
         <dependency>
 			<groupId>com.opencsv</groupId>
