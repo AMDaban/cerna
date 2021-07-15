@@ -1,19 +1,14 @@
 package org.amdaban.cerna.internal;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
-import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 
+import org.amdaban.cerna.internal.exceptions.BadDataException;
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.TaskMonitor;
 import org.cytoscape.work.Tunable;
-import org.cytoscape.work.TaskMonitor.Level;
 
 public class ExpressionInputTask extends AbstractTask {
     @Tunable(description = "mRNA Expression File", required = true, params = "input=true")
@@ -28,28 +23,30 @@ public class ExpressionInputTask extends AbstractTask {
     @Tunable(description = "circRNA Expression File", required = true, params = "input=true")
     public File circRNAExpressionFile;
 
-    public ExpressionInputTask() {}
+    public ExpressionProfileDB mRNAExpressionProfileDB;
+    public ExpressionProfileDB miRNAExpressionProfileDB;
+    public ExpressionProfileDB lncRNAExpressionProfileDB;
+    public ExpressionProfileDB circRNAExpressionProfileDB;
+
+    public ExpressionInputTask() {
+    }
 
     @Override
-    public void run(TaskMonitor monitor) {
-        FileReader reader;
+    public void run(TaskMonitor monitor) throws BadDataException, IOException, CsvException {
         try {
-            reader = new FileReader(this.mRNAExpressionFile);
-            CSVReader csvReader = new CSVReader(reader);
-            List<String[]> list = new ArrayList<>();
-            list = csvReader.readAll();
-            reader.close();
-            csvReader.close();
+            this.mRNAExpressionProfileDB = new ExpressionProfileDB(this.mRNAExpressionFile);
+            this.miRNAExpressionProfileDB = new ExpressionProfileDB(this.miRNAExpressionFile);
+            this.lncRNAExpressionProfileDB = new ExpressionProfileDB(this.lncRNAExpressionFile);
+            this.circRNAExpressionProfileDB = new ExpressionProfileDB(this.circRNAExpressionFile);
 
-            monitor.showMessage(Level.ERROR, list.toString());
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            super.insertTasksAfterCurrentTask(new InteractionInputTask(this.mRNAExpressionProfileDB,
+                    this.miRNAExpressionProfileDB, this.lncRNAExpressionProfileDB, this.circRNAExpressionProfileDB));
         } catch (IOException e) {
-            e.printStackTrace();
+            throw e;
         } catch (CsvException e) {
-            e.printStackTrace();
+            throw e;
+        } catch (BadDataException e) {
+            throw e;
         }
-
-        super.insertTasksAfterCurrentTask(new InteractionInputTask());
     }
 }

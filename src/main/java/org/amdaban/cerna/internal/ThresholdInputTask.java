@@ -12,15 +12,33 @@ public class ThresholdInputTask extends AbstractTask {
     @Tunable(description = "Confidence Threshold")
     public BoundedDouble confidenceThreshold = new BoundedDouble(0.0, 0.5, 1.0, false, false);
 
-    public ThresholdInputTask() {}
+    public ExpressionProfileDB mRNAExpressionProfileDB;
+    public ExpressionProfileDB miRNAExpressionProfileDB;
+    public ExpressionProfileDB lncRNAExpressionProfileDB;
+    public ExpressionProfileDB circRNAExpressionProfileDB;
+
+    public RNAInteractionDB mRNAInteractionDB;
+    public RNAInteractionDB lncRNAInteractionDB;
+    public RNAInteractionDB circRNAInteractionDB;
+
+    public ThresholdInputTask(ExpressionProfileDB mRNAExpProfDB, ExpressionProfileDB miRNAExpProfDB,
+            ExpressionProfileDB lncRNAExpProfDB, ExpressionProfileDB circRNAExpProfDB, RNAInteractionDB mRNAIntDB,
+            RNAInteractionDB lncRNAIntDB, RNAInteractionDB circRNAIntDB) {
+
+        this.mRNAExpressionProfileDB = mRNAExpProfDB;
+        this.miRNAExpressionProfileDB = miRNAExpProfDB;
+        this.lncRNAExpressionProfileDB = lncRNAExpProfDB;
+        this.circRNAExpressionProfileDB = circRNAExpProfDB;
+
+        this.mRNAInteractionDB = mRNAIntDB;
+        this.lncRNAInteractionDB = lncRNAIntDB;
+        this.circRNAInteractionDB = circRNAIntDB;
+    }
 
     @Override
     public void run(TaskMonitor monitor) {
-        super.insertTasksAfterCurrentTask(
-            new GenerateNetworkTask(
-                this.correlationThreshold.getValue(),
-                this.confidenceThreshold.getValue()
-            )
-        );
+        super.insertTasksAfterCurrentTask(new GenerateNetworkTask(mRNAExpressionProfileDB, miRNAExpressionProfileDB,
+                lncRNAExpressionProfileDB, circRNAExpressionProfileDB, mRNAInteractionDB, lncRNAInteractionDB,
+                circRNAInteractionDB, this.correlationThreshold.getValue(), this.confidenceThreshold.getValue()));
     }
 }
