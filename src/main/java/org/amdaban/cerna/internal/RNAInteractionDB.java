@@ -20,6 +20,7 @@ import org.amdaban.cerna.internal.exceptions.BadDataException;
 public class RNAInteractionDB {
     private Map<Set<String>, Double> interactionDB = new HashMap<>();
     private int fileColumnCount = 3;
+    private String firstColumnTitle = "miRNA";
 
     public RNAInteractionDB(File file) throws IOException, CsvException, BadDataException {
         FileReader fileReader = this.createFileReader(file);
@@ -29,10 +30,10 @@ public class RNAInteractionDB {
         this.interactionDB = this.extractInteractionDB(fileContent);
     }
 
-    public Double getScore(String k1, String k2) {
+    public Double getScore(String miRNA, String rna) {
         Set<String> key = new HashSet<>();
-        key.add(k1);
-        key.add(k2);
+        key.add(miRNA);
+        key.add(rna);
 
         return this.interactionDB.getOrDefault(key, null);
     }
@@ -50,6 +51,18 @@ public class RNAInteractionDB {
     }
 
     private Map<Set<String>, Double> extractInteractionDB(List<String[]> content) throws BadDataException {
+        if (content.size() == 0) {
+            throw new BadDataException("content does not have any rows");
+        }
+        String[] header = content.get(0);
+        if (header.length != fileColumnCount) {
+            throw new BadDataException("row dimention mismatch");
+        }
+        String firstColumn = header[0];
+        if (!firstColumn.equals(firstColumnTitle)) {
+            throw new BadDataException("first column must be " + firstColumnTitle);
+        }
+
         Map<Set<String>, Double> interactionDB = new HashMap<>();
         for (int i = 1; i < content.size(); i++) {
             String[] row = content.get(i);
@@ -75,4 +88,3 @@ public class RNAInteractionDB {
         return interactionDB;
     }
 }
-
