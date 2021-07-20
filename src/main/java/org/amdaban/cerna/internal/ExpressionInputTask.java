@@ -6,6 +6,9 @@ import java.io.IOException;
 import com.opencsv.exceptions.CsvException;
 
 import org.amdaban.cerna.internal.exceptions.BadDataException;
+import org.cytoscape.model.CyNetworkFactory;
+import org.cytoscape.model.CyNetworkManager;
+import org.cytoscape.session.CyNetworkNaming;
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.TaskMonitor;
 import org.cytoscape.work.Tunable;
@@ -28,7 +31,15 @@ public class ExpressionInputTask extends AbstractTask {
     public ExpressionProfileDB lncRNAExpressionProfileDB;
     public ExpressionProfileDB circRNAExpressionProfileDB;
 
-    public ExpressionInputTask() {
+    private final CyNetworkManager networkManager;
+    private final CyNetworkFactory networkFactory;
+    private final CyNetworkNaming networkNaming;
+
+    public ExpressionInputTask(CyNetworkManager networkManager, CyNetworkFactory networkFactory,
+            CyNetworkNaming networkNaming) {
+        this.networkManager = networkManager;
+        this.networkFactory = networkFactory;
+        this.networkNaming = networkNaming;
     }
 
     @Override
@@ -40,7 +51,8 @@ public class ExpressionInputTask extends AbstractTask {
             this.circRNAExpressionProfileDB = new ExpressionProfileDB(this.circRNAExpressionFile);
 
             super.insertTasksAfterCurrentTask(new InteractionInputTask(this.mRNAExpressionProfileDB,
-                    this.miRNAExpressionProfileDB, this.lncRNAExpressionProfileDB, this.circRNAExpressionProfileDB));
+                    this.miRNAExpressionProfileDB, this.lncRNAExpressionProfileDB, this.circRNAExpressionProfileDB,
+                    networkManager, networkFactory, networkNaming));
         } catch (IOException e) {
             throw e;
         } catch (CsvException e) {

@@ -7,10 +7,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
@@ -18,7 +16,7 @@ import com.opencsv.exceptions.CsvException;
 import org.amdaban.cerna.internal.exceptions.BadDataException;
 
 public class RNAInteractionDB {
-    private Map<Set<String>, Double> interactionDB = new HashMap<>();
+    private Map<String, Double> interactionDB = new HashMap<>();
     private int fileColumnCount = 3;
     private String firstColumnTitle = "miRNA";
 
@@ -31,10 +29,7 @@ public class RNAInteractionDB {
     }
 
     public Double getScore(String miRNA, String rna) {
-        Set<String> key = new HashSet<>();
-        key.add(miRNA);
-        key.add(rna);
-
+        String key = this.getKey(miRNA, rna);
         return this.interactionDB.getOrDefault(key, null);
     }
 
@@ -50,7 +45,7 @@ public class RNAInteractionDB {
         return content;
     }
 
-    private Map<Set<String>, Double> extractInteractionDB(List<String[]> content) throws BadDataException {
+    private Map<String, Double> extractInteractionDB(List<String[]> content) throws BadDataException {
         if (content.size() == 0) {
             throw new BadDataException("content does not have any rows");
         }
@@ -63,7 +58,7 @@ public class RNAInteractionDB {
             throw new BadDataException("first column must be " + firstColumnTitle);
         }
 
-        Map<Set<String>, Double> interactionDB = new HashMap<>();
+        Map<String, Double> interactionDB = new HashMap<>();
         for (int i = 1; i < content.size(); i++) {
             String[] row = content.get(i);
             if (row.length != fileColumnCount) {
@@ -79,12 +74,13 @@ public class RNAInteractionDB {
                 throw new BadDataException("bad profile data");
             }
 
-            Set<String> key = new HashSet<>();
-            key.add(c0);
-            key.add(c1);
-
+            String key = this.getKey(c0, c1);
             interactionDB.put(key, score);
         }
         return interactionDB;
+    }
+
+    private String getKey(String miRNA, String rna) {
+        return miRNA + "~" + rna;
     }
 }

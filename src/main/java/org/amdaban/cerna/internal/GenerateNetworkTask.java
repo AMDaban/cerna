@@ -2,12 +2,18 @@ package org.amdaban.cerna.internal;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.amdaban.cerna.internal.exceptions.BadDataException;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
+import org.cytoscape.model.CyNetwork;
+import org.cytoscape.model.CyNetworkFactory;
+import org.cytoscape.model.CyNetworkManager;
+import org.cytoscape.model.CyNode;
+import org.cytoscape.session.CyNetworkNaming;
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.TaskMonitor;
 
@@ -55,6 +61,10 @@ public class GenerateNetworkTask extends AbstractTask {
             this.rna2 = rna2;
             this.connectingMIRNAs = connectingMIRNAs;
         }
+
+        public String toString() {
+            return rna1 + ", " + rna2 + "->" + Arrays.toString(connectingMIRNAs);
+        }
     }
 
     public ExpressionProfileDB mRNAExpressionProfileDB;
@@ -69,13 +79,25 @@ public class GenerateNetworkTask extends AbstractTask {
     public double corrThres;
     public double confThres;
 
+    private final CyNetworkManager networkManager;
+    private final CyNetworkFactory networkFactory;
+    private final CyNetworkNaming networkNaming;
+
     public Set<String> miRNAs;
+
+    private Map<String, CyNode> mRNANodes = new HashMap<>();
+    private Map<String, CyNode> miRNANodes = new HashMap<>();
+    private Map<String, CyNode> lncRNANodes = new HashMap<>();
+    private Map<String, CyNode> circRNANodes = new HashMap<>();
+
+    CyNetwork network;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GenerateNetworkTask.class);
 
     public GenerateNetworkTask(ExpressionProfileDB mRNAExpProfDB, ExpressionProfileDB miRNAExpProfDB,
             ExpressionProfileDB lncRNAExpProfDB, ExpressionProfileDB circRNAExpProfDB, RNAInteractionDB mRNAIntDB,
-            RNAInteractionDB lncRNAIntDB, RNAInteractionDB circRNAIntDB, double corrThres, double confThres) {
+            RNAInteractionDB lncRNAIntDB, RNAInteractionDB circRNAIntDB, double corrThres, double confThres,
+            CyNetworkManager networkManager, CyNetworkFactory networkFactory, CyNetworkNaming networkNaming) {
 
         this.mRNAExpressionProfileDB = mRNAExpProfDB;
         this.miRNAExpressionProfileDB = miRNAExpProfDB;
@@ -90,6 +112,10 @@ public class GenerateNetworkTask extends AbstractTask {
         this.confThres = confThres;
 
         this.miRNAs = this.miRNAExpressionProfileDB.profiles.keySet();
+
+        this.networkManager = networkManager;
+        this.networkFactory = networkFactory;
+        this.networkNaming = networkNaming;
     }
 
     @Override
@@ -107,6 +133,8 @@ public class GenerateNetworkTask extends AbstractTask {
         PairRNA[] circRNAcorrScoresfiltered = this.filterPCSMatrix(circRNAcorrScores);
         PairConnectingMIRNAs[] mRNAcircRNAConnectingmiRNAs = this.extractConnectingMIRNAsBatch(
                 circRNAcorrScoresfiltered, this.mRNAInteractionDB, this.circRNAInteractionDB);
+
+        this.generateNetwork(mRNAlncRNAConnectingmiRNAs, mRNAcircRNAConnectingmiRNAs);
     }
 
     private void validateInputData() throws BadDataException {
@@ -184,17 +212,88 @@ public class GenerateNetworkTask extends AbstractTask {
         List<String> connectingMIRNAs = new ArrayList<>();
         for (String miRNA : this.miRNAs) {
             Double scoreWithRNA1 = refInteractionDB1.getScore(miRNA, rna1);
-            if (scoreWithRNA1 == null || scoreWithRNA1.doubleValue() >= this.confThres) {
+            if (scoreWithRNA1 == null || scoreWithRNA1.doubleValue() < this.confThres) {
                 continue;
             }
 
-            Double scoreWithRNA2 = refInteractionDB1.getScore(miRNA, rna2);
-            if (scoreWithRNA2 == null || scoreWithRNA2.doubleValue() >= this.confThres) {
+            Double scoreWithRNA2 = refInteractionDB2.getScore(miRNA, rna2);
+            if (scoreWithRNA2 == null || scoreWithRNA2.doubleValue() < this.confThres) {
                 continue;
             }
 
             connectingMIRNAs.add(miRNA);
         }
         return new PairConnectingMIRNAs(rna1, rna2, connectingMIRNAs.toArray(new String[0]));
+    }
+
+    private void generateNetwork(PairConnectingMIRNAs[] mRNAlncRNAConnectingmiRNAs,
+            PairConnectingMIRNAs[] mRNAcircRNAConnectingmiRNAs) {
+        network = networkFactory.createNetwork();
+        network.getRow(network).set(CyNetwork.NAME, networkNaming.getSuggestedNetworkTitle("ceRNA"));
+
+        this.createNodes();
+        this.createEdges(mRNAlncRNAConnectingmiRNAs, mRNAcircRNAConnectingmiRNAs);
+
+        networkManager.addNetwork(network);
+    }
+
+    private void createNodes() {
+        for (String mRNA : this.mRNAExpressionProfileDB.profiles.keySet()) {
+            CyNode mRNANode = this.network.addNode();
+            network.getDefaultNodeTable().getRow(mRNANode.getSUID()).set("name", "m~" + mRNA);
+            this.mRNANodes.put(mRNA, mRNANode);
+        }
+
+        for (String miRNA : this.miRNAExpressionProfileDB.profiles.keySet()) {
+            CyNode miRNANode = this.network.addNode();
+            network.getDefaultNodeTable().getRow(miRNANode.getSUID()).set("name", "mi~" + miRNA);
+            this.miRNANodes.put(miRNA, miRNANode);
+        }
+
+        for (String lncRNA : this.lncRNAExpressionProfileDB.profiles.keySet()) {
+            CyNode lncRNANode = this.network.addNode();
+            network.getDefaultNodeTable().getRow(lncRNANode.getSUID()).set("name", "lnc~" + lncRNA);
+            this.lncRNANodes.put(lncRNA, lncRNANode);
+        }
+
+        for (String circRNA : this.circRNAExpressionProfileDB.profiles.keySet()) {
+            CyNode circRNANode = this.network.addNode();
+            network.getDefaultNodeTable().getRow(circRNANode.getSUID()).set("name", "circ~" + circRNA);
+            this.circRNANodes.put(circRNA, circRNANode);
+        }
+    }
+
+    private void createEdges(PairConnectingMIRNAs[] mRNAlncRNAConnectingmiRNAs,
+            PairConnectingMIRNAs[] mRNAcircRNAConnectingmiRNAs) {
+
+        for (PairConnectingMIRNAs connectingmiRNAs : mRNAlncRNAConnectingmiRNAs) {
+            String mRNA = connectingmiRNAs.rna1;
+            CyNode mRNANode = this.mRNANodes.get(mRNA);
+
+            String lncRNA = connectingmiRNAs.rna2;
+            CyNode lncNode = this.lncRNANodes.get(lncRNA);
+
+            for (String miRNA : connectingmiRNAs.connectingMIRNAs) {
+                CyNode miRNANode = this.miRNANodes.get(miRNA);
+
+                network.addEdge(mRNANode, miRNANode, true);
+                network.addEdge(miRNANode, lncNode, true);
+            }
+        }
+
+        for (PairConnectingMIRNAs connectingmiRNAs : mRNAcircRNAConnectingmiRNAs) {
+            String mRNA = connectingmiRNAs.rna1;
+            CyNode mRNANode = this.mRNANodes.get(mRNA);
+
+            String circRNA = connectingmiRNAs.rna2;
+            CyNode circNode = this.circRNANodes.get(circRNA);
+
+            for (String miRNA : connectingmiRNAs.connectingMIRNAs) {
+                CyNode miRNANode = this.miRNANodes.get(miRNA);
+
+                network.addEdge(mRNANode, miRNANode, true);
+                network.addEdge(miRNANode, circNode, true);
+            }
+        }
     }
 }
