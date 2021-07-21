@@ -1,5 +1,6 @@
 package org.amdaban.cerna.internal;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -10,6 +11,7 @@ import java.util.Set;
 
 import org.amdaban.cerna.internal.exceptions.BadDataException;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
+import org.cytoscape.model.CyEdge;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.CyNetworkManager;
@@ -19,6 +21,11 @@ import org.cytoscape.task.visualize.ApplyPreferredLayoutTaskFactory;
 import org.cytoscape.view.model.CyNetworkView;
 import org.cytoscape.view.model.CyNetworkViewFactory;
 import org.cytoscape.view.model.CyNetworkViewManager;
+import org.cytoscape.view.model.View;
+import org.cytoscape.view.presentation.property.ArrowShapeVisualProperty;
+import org.cytoscape.view.presentation.property.BasicVisualLexicon;
+import org.cytoscape.view.presentation.property.LineTypeVisualProperty;
+import org.cytoscape.view.presentation.property.NodeShapeVisualProperty;
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.TaskMonitor;
 
@@ -98,7 +105,8 @@ public class GenerateNetworkTask extends AbstractTask {
     private Map<String, CyNode> lncRNANodes = new HashMap<>();
     private Map<String, CyNode> circRNANodes = new HashMap<>();
 
-    CyNetwork network;
+    private CyNetwork network;
+    private CyNetworkView networkView;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GenerateNetworkTask.class);
 
@@ -148,6 +156,8 @@ public class GenerateNetworkTask extends AbstractTask {
                 circRNAcorrScoresfiltered, this.mRNAInteractionDB, this.circRNAInteractionDB);
 
         this.generateNetwork(mRNAlncRNAConnectingmiRNAs, mRNAcircRNAConnectingmiRNAs);
+
+        this.applyVisualProperties();
 
         this.applyPreferredLayout();
     }
@@ -251,32 +261,32 @@ public class GenerateNetworkTask extends AbstractTask {
 
         networkManager.addNetwork(network);
 
-        CyNetworkView networkView = networkViewFactory.createNetworkView(network);
+        networkView = networkViewFactory.createNetworkView(network);
         networkViewManager.addNetworkView(networkView);
     }
 
     private void createNodes() {
         for (String mRNA : this.mRNAExpressionProfileDB.profiles.keySet()) {
             CyNode mRNANode = this.network.addNode();
-            network.getDefaultNodeTable().getRow(mRNANode.getSUID()).set("name", "m~" + mRNA);
+            network.getDefaultNodeTable().getRow(mRNANode.getSUID()).set("name", "mRNA~" + mRNA);
             this.mRNANodes.put(mRNA, mRNANode);
         }
 
         for (String miRNA : this.miRNAExpressionProfileDB.profiles.keySet()) {
             CyNode miRNANode = this.network.addNode();
-            network.getDefaultNodeTable().getRow(miRNANode.getSUID()).set("name", "mi~" + miRNA);
+            network.getDefaultNodeTable().getRow(miRNANode.getSUID()).set("name", "miRNA~" + miRNA);
             this.miRNANodes.put(miRNA, miRNANode);
         }
 
         for (String lncRNA : this.lncRNAExpressionProfileDB.profiles.keySet()) {
             CyNode lncRNANode = this.network.addNode();
-            network.getDefaultNodeTable().getRow(lncRNANode.getSUID()).set("name", "lnc~" + lncRNA);
+            network.getDefaultNodeTable().getRow(lncRNANode.getSUID()).set("name", "lncRNA~" + lncRNA);
             this.lncRNANodes.put(lncRNA, lncRNANode);
         }
 
         for (String circRNA : this.circRNAExpressionProfileDB.profiles.keySet()) {
             CyNode circRNANode = this.network.addNode();
-            network.getDefaultNodeTable().getRow(circRNANode.getSUID()).set("name", "circ~" + circRNA);
+            network.getDefaultNodeTable().getRow(circRNANode.getSUID()).set("name", "circRNA~" + circRNA);
             this.circRNANodes.put(circRNA, circRNANode);
         }
     }
@@ -294,8 +304,13 @@ public class GenerateNetworkTask extends AbstractTask {
             for (String miRNA : connectingmiRNAs.connectingMIRNAs) {
                 CyNode miRNANode = this.miRNANodes.get(miRNA);
 
-                network.addEdge(mRNANode, miRNANode, true);
-                network.addEdge(miRNANode, lncNode, true);
+                if (!network.containsEdge(mRNANode, miRNANode)) {
+                    network.addEdge(mRNANode, miRNANode, true);
+                }
+
+                if (!network.containsEdge(miRNANode, lncNode)) {
+                    network.addEdge(miRNANode, lncNode, true);
+                }
             }
         }
 
@@ -309,8 +324,13 @@ public class GenerateNetworkTask extends AbstractTask {
             for (String miRNA : connectingmiRNAs.connectingMIRNAs) {
                 CyNode miRNANode = this.miRNANodes.get(miRNA);
 
-                network.addEdge(mRNANode, miRNANode, true);
-                network.addEdge(miRNANode, circNode, true);
+                if (!network.containsEdge(mRNANode, miRNANode)) {
+                    network.addEdge(mRNANode, miRNANode, true);
+                }
+
+                if (!network.containsEdge(miRNANode, circNode)) {
+                    network.addEdge(miRNANode, circNode, true);
+                }
             }
         }
     }
@@ -318,5 +338,43 @@ public class GenerateNetworkTask extends AbstractTask {
     private void applyPreferredLayout() {
         final Collection<CyNetworkView> networkViews = networkViewManager.getNetworkViews(network);
         super.insertTasksAfterCurrentTask(applyPreferredLayoutTaskFactory.createTaskIterator(networkViews));
+    }
+
+    private void applyVisualProperties() {
+        for (Map.Entry<String, CyNode> nodeEntry : this.mRNANodes.entrySet()) {
+            View<CyNode> nodeView = networkView.getNodeView(nodeEntry.getValue());
+            nodeView.setLockedValue(BasicVisualLexicon.NODE_SHAPE, NodeShapeVisualProperty.ELLIPSE);
+            nodeView.setLockedValue(BasicVisualLexicon.NODE_LABEL, nodeEntry.getKey());
+            nodeView.setLockedValue(BasicVisualLexicon.NODE_FILL_COLOR, Color.CYAN);
+            nodeView.setLockedValue(BasicVisualLexicon.NODE_LABEL_FONT_SIZE, 5);
+        }
+
+        for (Map.Entry<String, CyNode> nodeEntry : this.miRNANodes.entrySet()) {
+            View<CyNode> nodeView = networkView.getNodeView(nodeEntry.getValue());
+            nodeView.setLockedValue(BasicVisualLexicon.NODE_SHAPE, NodeShapeVisualProperty.TRIANGLE);
+            nodeView.setLockedValue(BasicVisualLexicon.NODE_LABEL, nodeEntry.getKey());
+            nodeView.setLockedValue(BasicVisualLexicon.NODE_FILL_COLOR, Color.lightGray);
+            nodeView.setLockedValue(BasicVisualLexicon.NODE_LABEL_FONT_SIZE, 5);
+        }
+
+        for (Map.Entry<String, CyNode> nodeEntry : this.lncRNANodes.entrySet()) {
+            View<CyNode> nodeView = networkView.getNodeView(nodeEntry.getValue());
+            nodeView.setLockedValue(BasicVisualLexicon.NODE_SHAPE, NodeShapeVisualProperty.RECTANGLE);
+            nodeView.setLockedValue(BasicVisualLexicon.NODE_LABEL, nodeEntry.getKey());
+            nodeView.setLockedValue(BasicVisualLexicon.NODE_FILL_COLOR, Color.MAGENTA);
+            nodeView.setLockedValue(BasicVisualLexicon.NODE_LABEL_FONT_SIZE, 5);
+        }
+
+        for (Map.Entry<String, CyNode> nodeEntry : this.circRNANodes.entrySet()) {
+            View<CyNode> nodeView = networkView.getNodeView(nodeEntry.getValue());
+            nodeView.setLockedValue(BasicVisualLexicon.NODE_SHAPE, NodeShapeVisualProperty.DIAMOND);
+            nodeView.setLockedValue(BasicVisualLexicon.NODE_LABEL, nodeEntry.getKey());
+            nodeView.setLockedValue(BasicVisualLexicon.NODE_FILL_COLOR, Color.YELLOW);
+            nodeView.setLockedValue(BasicVisualLexicon.NODE_LABEL_FONT_SIZE, 5);
+        }
+
+        for (View<CyEdge> edgeView : this.networkView.getEdgeViews()) {
+            edgeView.setLockedValue(BasicVisualLexicon.EDGE_TARGET_ARROW_SHAPE, ArrowShapeVisualProperty.ARROW);
+        }
     }
 }
