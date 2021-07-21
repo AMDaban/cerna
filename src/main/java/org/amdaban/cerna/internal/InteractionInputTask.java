@@ -9,6 +9,8 @@ import org.amdaban.cerna.internal.exceptions.BadDataException;
 import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.CyNetworkManager;
 import org.cytoscape.session.CyNetworkNaming;
+import org.cytoscape.view.model.CyNetworkViewFactory;
+import org.cytoscape.view.model.CyNetworkViewManager;
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.TaskMonitor;
 import org.cytoscape.work.Tunable;
@@ -35,10 +37,13 @@ public class InteractionInputTask extends AbstractTask {
     private final CyNetworkManager networkManager;
     private final CyNetworkFactory networkFactory;
     private final CyNetworkNaming networkNaming;
+    private final CyNetworkViewFactory networkViewFactory;
+    private final CyNetworkViewManager networkViewManager;
 
     public InteractionInputTask(ExpressionProfileDB mRNAExpProfDB, ExpressionProfileDB miRNAExpProfDB,
             ExpressionProfileDB lncRNAExpProfDB, ExpressionProfileDB circRNAExpProfDB, CyNetworkManager networkManager,
-            CyNetworkFactory networkFactory, CyNetworkNaming networkNaming) {
+            CyNetworkFactory networkFactory, CyNetworkNaming networkNaming, CyNetworkViewFactory networkViewFactory,
+            CyNetworkViewManager networkViewManager) {
         this.mRNAExpressionProfileDB = mRNAExpProfDB;
         this.miRNAExpressionProfileDB = miRNAExpProfDB;
         this.lncRNAExpressionProfileDB = lncRNAExpProfDB;
@@ -47,6 +52,8 @@ public class InteractionInputTask extends AbstractTask {
         this.networkManager = networkManager;
         this.networkFactory = networkFactory;
         this.networkNaming = networkNaming;
+        this.networkViewManager = networkViewManager;
+        this.networkViewFactory = networkViewFactory;
     }
 
     @Override
@@ -59,7 +66,7 @@ public class InteractionInputTask extends AbstractTask {
             super.insertTasksAfterCurrentTask(new ThresholdInputTask(this.mRNAExpressionProfileDB,
                     this.miRNAExpressionProfileDB, this.lncRNAExpressionProfileDB, this.circRNAExpressionProfileDB,
                     this.mRNAInteractionDB, this.lncRNAInteractionDB, this.circRNAInteractionDB, networkManager,
-                    networkFactory, networkNaming));
+                    networkFactory, networkNaming, networkViewFactory, networkViewManager));
         } catch (IOException e) {
             throw e;
         } catch (CsvException e) {

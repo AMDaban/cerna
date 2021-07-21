@@ -2,6 +2,7 @@ package org.amdaban.cerna.internal;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,10 @@ import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.CyNetworkManager;
 import org.cytoscape.model.CyNode;
 import org.cytoscape.session.CyNetworkNaming;
+import org.cytoscape.task.visualize.ApplyPreferredLayoutTaskFactory;
+import org.cytoscape.view.model.CyNetworkView;
+import org.cytoscape.view.model.CyNetworkViewFactory;
+import org.cytoscape.view.model.CyNetworkViewManager;
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.TaskMonitor;
 
@@ -82,6 +87,8 @@ public class GenerateNetworkTask extends AbstractTask {
     private final CyNetworkManager networkManager;
     private final CyNetworkFactory networkFactory;
     private final CyNetworkNaming networkNaming;
+    private final CyNetworkViewFactory networkViewFactory;
+    private final CyNetworkViewManager networkViewManager;
 
     public Set<String> miRNAs;
 
@@ -97,7 +104,8 @@ public class GenerateNetworkTask extends AbstractTask {
     public GenerateNetworkTask(ExpressionProfileDB mRNAExpProfDB, ExpressionProfileDB miRNAExpProfDB,
             ExpressionProfileDB lncRNAExpProfDB, ExpressionProfileDB circRNAExpProfDB, RNAInteractionDB mRNAIntDB,
             RNAInteractionDB lncRNAIntDB, RNAInteractionDB circRNAIntDB, double corrThres, double confThres,
-            CyNetworkManager networkManager, CyNetworkFactory networkFactory, CyNetworkNaming networkNaming) {
+            CyNetworkManager networkManager, CyNetworkFactory networkFactory, CyNetworkNaming networkNaming,
+            CyNetworkViewFactory networkViewFactory, CyNetworkViewManager networkViewManager) {
 
         this.mRNAExpressionProfileDB = mRNAExpProfDB;
         this.miRNAExpressionProfileDB = miRNAExpProfDB;
@@ -116,6 +124,8 @@ public class GenerateNetworkTask extends AbstractTask {
         this.networkManager = networkManager;
         this.networkFactory = networkFactory;
         this.networkNaming = networkNaming;
+        this.networkViewManager = networkViewManager;
+        this.networkViewFactory = networkViewFactory;
     }
 
     @Override
@@ -235,6 +245,19 @@ public class GenerateNetworkTask extends AbstractTask {
         this.createEdges(mRNAlncRNAConnectingmiRNAs, mRNAcircRNAConnectingmiRNAs);
 
         networkManager.addNetwork(network);
+
+        final Collection<CyNetworkView> views = networkViewManager.getNetworkViews(network);
+        CyNetworkView networkView = null;
+        if (views.size() != 0) {
+            LOGGER.error("arg0, arg1");
+            networkView = views.iterator().next();
+        }
+
+        if (networkView == null) {
+            // create a new view for my network
+            networkView = networkViewFactory.createNetworkView(network);
+            networkViewManager.addNetworkView(networkView);
+        }
     }
 
     private void createNodes() {

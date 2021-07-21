@@ -9,6 +9,8 @@ import org.amdaban.cerna.internal.exceptions.BadDataException;
 import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.CyNetworkManager;
 import org.cytoscape.session.CyNetworkNaming;
+import org.cytoscape.view.model.CyNetworkViewFactory;
+import org.cytoscape.view.model.CyNetworkViewManager;
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.TaskMonitor;
 import org.cytoscape.work.Tunable;
@@ -34,12 +36,17 @@ public class ExpressionInputTask extends AbstractTask {
     private final CyNetworkManager networkManager;
     private final CyNetworkFactory networkFactory;
     private final CyNetworkNaming networkNaming;
+    private final CyNetworkViewFactory networkViewFactory;
+    private final CyNetworkViewManager networkViewManager;
 
     public ExpressionInputTask(CyNetworkManager networkManager, CyNetworkFactory networkFactory,
-            CyNetworkNaming networkNaming) {
+            CyNetworkNaming networkNaming, CyNetworkViewFactory networkViewFactory,
+            CyNetworkViewManager networkViewManager) {
         this.networkManager = networkManager;
         this.networkFactory = networkFactory;
         this.networkNaming = networkNaming;
+        this.networkViewManager = networkViewManager;
+        this.networkViewFactory = networkViewFactory;
     }
 
     @Override
@@ -52,7 +59,7 @@ public class ExpressionInputTask extends AbstractTask {
 
             super.insertTasksAfterCurrentTask(new InteractionInputTask(this.mRNAExpressionProfileDB,
                     this.miRNAExpressionProfileDB, this.lncRNAExpressionProfileDB, this.circRNAExpressionProfileDB,
-                    networkManager, networkFactory, networkNaming));
+                    networkManager, networkFactory, networkNaming, networkViewFactory, networkViewManager));
         } catch (IOException e) {
             throw e;
         } catch (CsvException e) {

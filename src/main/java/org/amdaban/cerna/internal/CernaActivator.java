@@ -4,6 +4,8 @@ import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.CyNetworkManager;
 import org.cytoscape.service.util.AbstractCyActivator;
 import org.cytoscape.session.CyNetworkNaming;
+import org.cytoscape.view.model.CyNetworkViewFactory;
+import org.cytoscape.view.model.CyNetworkViewManager;
 import org.cytoscape.work.TaskFactory;
 
 import org.osgi.framework.BundleContext;
@@ -16,9 +18,11 @@ public class CernaActivator extends AbstractCyActivator {
         CyNetworkManager cyNetworkManagerServiceRef = getService(context, CyNetworkManager.class);
         CyNetworkNaming cyNetworkNamingServiceRef = getService(context, CyNetworkNaming.class);
         CyNetworkFactory cyNetworkFactoryServiceRef = getService(context, CyNetworkFactory.class);
+        CyNetworkViewFactory cyNetworkViewFactoryServiceRef = getService(context, CyNetworkViewFactory.class);
+        CyNetworkViewManager cyNetworkViewManagerServiceRef = getService(context, CyNetworkViewManager.class);
 
         CernaTaskFactory myFactory = new CernaTaskFactory(cyNetworkManagerServiceRef, cyNetworkFactoryServiceRef,
-                cyNetworkNamingServiceRef);
+                cyNetworkNamingServiceRef, cyNetworkViewFactoryServiceRef, cyNetworkViewManagerServiceRef);
 
         Properties props = new Properties();
         props.setProperty("preferredMenu", "Apps.cerna");
