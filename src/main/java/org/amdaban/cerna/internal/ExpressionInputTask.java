@@ -9,6 +9,7 @@ import org.amdaban.cerna.internal.exceptions.BadDataException;
 import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.CyNetworkManager;
 import org.cytoscape.session.CyNetworkNaming;
+import org.cytoscape.task.visualize.ApplyPreferredLayoutTaskFactory;
 import org.cytoscape.view.model.CyNetworkViewFactory;
 import org.cytoscape.view.model.CyNetworkViewManager;
 import org.cytoscape.work.AbstractTask;
@@ -38,15 +39,17 @@ public class ExpressionInputTask extends AbstractTask {
     private final CyNetworkNaming networkNaming;
     private final CyNetworkViewFactory networkViewFactory;
     private final CyNetworkViewManager networkViewManager;
+    private final ApplyPreferredLayoutTaskFactory applyPreferredLayoutTaskFactory;
 
     public ExpressionInputTask(CyNetworkManager networkManager, CyNetworkFactory networkFactory,
             CyNetworkNaming networkNaming, CyNetworkViewFactory networkViewFactory,
-            CyNetworkViewManager networkViewManager) {
+            CyNetworkViewManager networkViewManager, ApplyPreferredLayoutTaskFactory applyPreferredLayoutTaskFactory) {
         this.networkManager = networkManager;
         this.networkFactory = networkFactory;
         this.networkNaming = networkNaming;
         this.networkViewManager = networkViewManager;
         this.networkViewFactory = networkViewFactory;
+        this.applyPreferredLayoutTaskFactory = applyPreferredLayoutTaskFactory;
     }
 
     @Override
@@ -59,7 +62,7 @@ public class ExpressionInputTask extends AbstractTask {
 
             super.insertTasksAfterCurrentTask(new InteractionInputTask(this.mRNAExpressionProfileDB,
                     this.miRNAExpressionProfileDB, this.lncRNAExpressionProfileDB, this.circRNAExpressionProfileDB,
-                    networkManager, networkFactory, networkNaming, networkViewFactory, networkViewManager));
+                    networkManager, networkFactory, networkNaming, networkViewFactory, networkViewManager, applyPreferredLayoutTaskFactory));
         } catch (IOException e) {
             throw e;
         } catch (CsvException e) {

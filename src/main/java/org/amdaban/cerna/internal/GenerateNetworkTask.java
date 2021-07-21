@@ -89,6 +89,7 @@ public class GenerateNetworkTask extends AbstractTask {
     private final CyNetworkNaming networkNaming;
     private final CyNetworkViewFactory networkViewFactory;
     private final CyNetworkViewManager networkViewManager;
+    private final ApplyPreferredLayoutTaskFactory applyPreferredLayoutTaskFactory;
 
     public Set<String> miRNAs;
 
@@ -105,7 +106,8 @@ public class GenerateNetworkTask extends AbstractTask {
             ExpressionProfileDB lncRNAExpProfDB, ExpressionProfileDB circRNAExpProfDB, RNAInteractionDB mRNAIntDB,
             RNAInteractionDB lncRNAIntDB, RNAInteractionDB circRNAIntDB, double corrThres, double confThres,
             CyNetworkManager networkManager, CyNetworkFactory networkFactory, CyNetworkNaming networkNaming,
-            CyNetworkViewFactory networkViewFactory, CyNetworkViewManager networkViewManager) {
+            CyNetworkViewFactory networkViewFactory, CyNetworkViewManager networkViewManager,
+            ApplyPreferredLayoutTaskFactory applyPreferredLayoutTaskFactory) {
 
         this.mRNAExpressionProfileDB = mRNAExpProfDB;
         this.miRNAExpressionProfileDB = miRNAExpProfDB;
@@ -126,6 +128,7 @@ public class GenerateNetworkTask extends AbstractTask {
         this.networkNaming = networkNaming;
         this.networkViewManager = networkViewManager;
         this.networkViewFactory = networkViewFactory;
+        this.applyPreferredLayoutTaskFactory = applyPreferredLayoutTaskFactory;
     }
 
     @Override
@@ -145,6 +148,8 @@ public class GenerateNetworkTask extends AbstractTask {
                 circRNAcorrScoresfiltered, this.mRNAInteractionDB, this.circRNAInteractionDB);
 
         this.generateNetwork(mRNAlncRNAConnectingmiRNAs, mRNAcircRNAConnectingmiRNAs);
+
+        this.applyPreferredLayout();
     }
 
     private void validateInputData() throws BadDataException {
@@ -246,18 +251,8 @@ public class GenerateNetworkTask extends AbstractTask {
 
         networkManager.addNetwork(network);
 
-        final Collection<CyNetworkView> views = networkViewManager.getNetworkViews(network);
-        CyNetworkView networkView = null;
-        if (views.size() != 0) {
-            LOGGER.error("arg0, arg1");
-            networkView = views.iterator().next();
-        }
-
-        if (networkView == null) {
-            // create a new view for my network
-            networkView = networkViewFactory.createNetworkView(network);
-            networkViewManager.addNetworkView(networkView);
-        }
+        CyNetworkView networkView = networkViewFactory.createNetworkView(network);
+        networkViewManager.addNetworkView(networkView);
     }
 
     private void createNodes() {
@@ -318,5 +313,10 @@ public class GenerateNetworkTask extends AbstractTask {
                 network.addEdge(miRNANode, circNode, true);
             }
         }
+    }
+
+    private void applyPreferredLayout() {
+        final Collection<CyNetworkView> networkViews = networkViewManager.getNetworkViews(network);
+        super.insertTasksAfterCurrentTask(applyPreferredLayoutTaskFactory.createTaskIterator(networkViews));
     }
 }

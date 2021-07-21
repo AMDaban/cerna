@@ -3,6 +3,7 @@ package org.amdaban.cerna.internal;
 import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.CyNetworkManager;
 import org.cytoscape.session.CyNetworkNaming;
+import org.cytoscape.task.visualize.ApplyPreferredLayoutTaskFactory;
 import org.cytoscape.view.model.CyNetworkViewFactory;
 import org.cytoscape.view.model.CyNetworkViewManager;
 import org.cytoscape.work.AbstractTask;
@@ -31,12 +32,13 @@ public class ThresholdInputTask extends AbstractTask {
     private final CyNetworkNaming networkNaming;
     private final CyNetworkViewFactory networkViewFactory;
     private final CyNetworkViewManager networkViewManager;
+    private final ApplyPreferredLayoutTaskFactory applyPreferredLayoutTaskFactory;
 
     public ThresholdInputTask(ExpressionProfileDB mRNAExpProfDB, ExpressionProfileDB miRNAExpProfDB,
             ExpressionProfileDB lncRNAExpProfDB, ExpressionProfileDB circRNAExpProfDB, RNAInteractionDB mRNAIntDB,
             RNAInteractionDB lncRNAIntDB, RNAInteractionDB circRNAIntDB, CyNetworkManager networkManager,
             CyNetworkFactory networkFactory, CyNetworkNaming networkNaming, CyNetworkViewFactory networkViewFactory,
-            CyNetworkViewManager networkViewManager) {
+            CyNetworkViewManager networkViewManager, ApplyPreferredLayoutTaskFactory applyPreferredLayoutTaskFactory) {
 
         this.mRNAExpressionProfileDB = mRNAExpProfDB;
         this.miRNAExpressionProfileDB = miRNAExpProfDB;
@@ -52,6 +54,7 @@ public class ThresholdInputTask extends AbstractTask {
         this.networkNaming = networkNaming;
         this.networkViewManager = networkViewManager;
         this.networkViewFactory = networkViewFactory;
+        this.applyPreferredLayoutTaskFactory = applyPreferredLayoutTaskFactory;
     }
 
     @Override
@@ -59,6 +62,7 @@ public class ThresholdInputTask extends AbstractTask {
         super.insertTasksAfterCurrentTask(new GenerateNetworkTask(mRNAExpressionProfileDB, miRNAExpressionProfileDB,
                 lncRNAExpressionProfileDB, circRNAExpressionProfileDB, mRNAInteractionDB, lncRNAInteractionDB,
                 circRNAInteractionDB, this.correlationThreshold.getValue(), this.confidenceThreshold.getValue(),
-                networkManager, networkFactory, networkNaming, networkViewFactory, networkViewManager));
+                networkManager, networkFactory, networkNaming, networkViewFactory, networkViewManager,
+                applyPreferredLayoutTaskFactory));
     }
 }
